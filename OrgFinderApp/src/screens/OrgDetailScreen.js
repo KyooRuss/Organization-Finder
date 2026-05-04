@@ -1,0 +1,167 @@
+import React, { useState, useEffect } from 'react';
+import {
+    View, Text, ScrollView, Image, StyleSheet,
+    TouchableOpacity, ActivityIndicator, FlatList, Dimensions,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import api from '../api/client';
+
+const { width } = Dimensions.get('window');
+
+export default function OrgDetailScreen({ route, navigation }) {
+    const { id } = route.params;
+    const [org, setOrg]       = useState(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        api.get(`/organizations/${id}`)
+            .then(res => setOrg(res.data.organization))
+            .catch(() => {})
+            .finally(() => setLoading(false));
+    }, [id]);
+
+    if (loading) return (
+        <View style={styles.center}>
+            <ActivityIndicator color="#4A6CF7" size="large" />
+        </View>
+    );
+
+    if (!org) return (
+        <View style={styles.center}><Text>Organization not found.</Text></View>
+    );
+
+    return (
+        <ScrollView style={styles.root} showsVerticalScrollIndicator={false}>
+            {/* Hero header */}
+            <View style={styles.hero}>
+                <SafeAreaView>
+                    <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+                        <Text style={styles.backIcon}>‹</Text>
+                        <Text style={styles.backLabel}>{org.name}</Text>
+                    </TouchableOpacity>
+                </SafeAreaView>
+                <View style={styles.heroContent}>
+                    {org.logo
+                        ? <Image source={{ uri: org.logo }} style={styles.heroLogo} />
+                        : <View style={[styles.heroLogo, styles.heroLogoFallback]}>
+                            <Text style={styles.heroLogoText}>{org.name?.[0] ?? 'O'}</Text>
+                          </View>
+                    }
+                    <Text style={styles.heroName}>{org.name}</Text>
+                    {org.president ? <Text style={styles.heroPresident}>President: {org.president}</Text> : null}
+                </View>
+            </View>
+
+            <View style={styles.body}>
+                {/* Why Join */}
+                {org.reasons?.length > 0 && (
+                    <View style={styles.section}>
+                        <Text style={styles.sectionTitle}>Why Join {org.name}?</Text>
+                        {org.reasons.map((r, i) => (
+                            <View key={i} style={styles.reasonRow}>
+                                <Text style={styles.reasonCheck}>✅</Text>
+                                <Text style={styles.reasonText}>{r}</Text>
+                            </View>
+                        ))}
+                    </View>
+                )}
+
+                {/* Events & Activities photos */}
+                {org.photos?.length > 0 && (
+                    <View style={styles.section}>
+                        <Text style={styles.sectionTitle}>Events & Activities</Text>
+                        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.photosRow}>
+                            {org.photos.map((p, i) => (
+                                <Image key={i} source={{ uri: p }} style={styles.photo} />
+                            ))}
+                        </ScrollView>
+                    </View>
+                )}
+
+                {/* Testimonials */}
+                {org.testimonials?.length > 0 && (
+                    <View style={styles.section}>
+                        <View style={styles.sectionHeaderBtn}>
+                            <Text style={styles.sectionTitleWhite}>Members' Experience</Text>
+                        </View>
+                        {org.testimonials.map((t, i) => (
+                            <View key={i} style={styles.testimonialCard}>
+                                <Text style={styles.testimonialText}>"{t}"</Text>
+                            </View>
+                        ))}
+                    </View>
+                )}
+
+                {/* Core info */}
+                <View style={styles.coreSection}>
+                    <View style={styles.coreBadge}>
+                        <Text style={styles.coreBadgeText}>Core Information</Text>
+                    </View>
+                    {org.vision ? (
+                        <>
+                            <Text style={styles.coreLabel}>Vision</Text>
+                            <Text style={styles.coreText}>{org.vision}</Text>
+                        </>
+                    ) : null}
+                    {org.mission ? (
+                        <>
+                            <Text style={styles.coreLabel}>Mission</Text>
+                            <Text style={styles.coreText}>{org.mission}</Text>
+                        </>
+                    ) : null}
+                </View>
+
+                {/* Footer contact info */}
+                {(org.room_number || org.contact_telegram || org.contact_facebook) && (
+                    <View style={styles.footer}>
+                        <Text style={styles.footerName}>{org.name}</Text>
+                        <View style={styles.footerRow}>
+                            {org.room_number && <Text style={styles.footerItem}>📍 {org.room_number}</Text>}
+                            {org.contact_telegram && <Text style={styles.footerItem}>📱 {org.contact_telegram}</Text>}
+                            {org.contact_facebook && <Text style={styles.footerItem}>👤 {org.contact_facebook}</Text>}
+                        </View>
+                    </View>
+                )}
+            </View>
+        </ScrollView>
+    );
+}
+
+const styles = StyleSheet.create({
+    root: { flex: 1, backgroundColor: '#f5f6fa' },
+    center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+    hero: { backgroundColor: '#4A6CF7', paddingBottom: 30 },
+    backBtn: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 8 },
+    backIcon: { color: '#fff', fontSize: 28, lineHeight: 28, marginRight: 4 },
+    backLabel: { color: '#fff', fontSize: 16, fontWeight: '600' },
+    heroContent: { alignItems: 'center', paddingHorizontal: 20, marginTop: 10 },
+    heroLogo: { width: 80, height: 80, borderRadius: 40, marginBottom: 12, borderWidth: 3, borderColor: 'rgba(255,255,255,0.5)' },
+    heroLogoFallback: { backgroundColor: 'rgba(255,255,255,0.25)', alignItems: 'center', justifyContent: 'center' },
+    heroLogoText: { color: '#fff', fontSize: 32, fontWeight: '700' },
+    heroName: { fontSize: 22, fontWeight: '800', color: '#fff', textAlign: 'center', marginBottom: 4 },
+    heroPresident: { fontSize: 13, color: 'rgba(255,255,255,0.75)', fontStyle: 'italic' },
+    body: { padding: 16 },
+    section: { backgroundColor: '#fff', borderRadius: 14, padding: 16, marginBottom: 14, elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 6 },
+    sectionTitle: { fontSize: 16, fontWeight: '700', color: '#1e2f6e', marginBottom: 12 },
+    reasonRow: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 8, gap: 8 },
+    reasonCheck: { fontSize: 14 },
+    reasonText: { flex: 1, fontSize: 14, color: '#444', lineHeight: 20 },
+    photosRow: { marginHorizontal: -4 },
+    photo: { width: 140, height: 100, borderRadius: 10, marginHorizontal: 4 },
+    sectionHeaderBtn: { backgroundColor: '#4A6CF7', borderRadius: 8, padding: 10, marginBottom: 12, alignSelf: 'flex-start' },
+    sectionTitleWhite: { color: '#fff', fontWeight: '700', fontSize: 14 },
+    testimonialCard: {
+        backgroundColor: '#eef2ff', borderRadius: 10, padding: 14,
+        marginBottom: 10, borderLeftWidth: 3, borderLeftColor: '#4A6CF7',
+    },
+    testimonialText: { fontSize: 13, color: '#333', lineHeight: 20, fontStyle: 'italic' },
+    coreSection: { backgroundColor: '#fff', borderRadius: 14, padding: 16, marginBottom: 14, elevation: 2, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 6 },
+    coreBadge: { backgroundColor: '#4A6CF7', alignSelf: 'flex-start', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6, marginBottom: 14 },
+    coreBadgeText: { color: '#fff', fontWeight: '700', fontSize: 13 },
+    coreLabel: { fontSize: 15, fontWeight: '700', color: '#1e2f6e', marginBottom: 6, marginTop: 8 },
+    coreText: { fontSize: 14, color: '#555', lineHeight: 21 },
+    footer: { backgroundColor: '#1e2f6e', borderRadius: 14, padding: 16, marginBottom: 20 },
+    footerName: { color: '#fff', fontWeight: '700', fontSize: 14, marginBottom: 8 },
+    footerRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+    footerItem: { color: 'rgba(255,255,255,0.8)', fontSize: 12 },
+});
