@@ -8,111 +8,158 @@ use Illuminate\Http\Request;
 
 class RecommendationApiController extends Controller
 {
-    // Category-to-interest mapping for rule-based matching
-    private const INTEREST_CATEGORY_MAP = [
-        'Technology'           => ['Technology', 'IT', 'Computer Science'],
-        'Programming'          => ['Technology', 'IT', 'Programming'],
-        'Networking'           => ['Technology', 'Networking'],
-        'Arts'                 => ['Arts', 'Creative'],
-        'Gaming'               => ['Gaming', 'E-sports'],
-        'Design'               => ['Design', 'Creative', 'Arts'],
-        'Animation'            => ['Arts', 'Design', 'Creative'],
-        'Cyber Security'       => ['Technology', 'Cybersecurity'],
-        'Artificial Intelligence' => ['Technology', 'AI', 'Machine Learning'],
-        'Analytics'            => ['Technology', 'Data Science'],
-        'Machine Learning'     => ['Technology', 'AI'],
-        'Innovation'           => ['Technology', 'Entrepreneurship'],
+    // Weighted: interests = 3pts, skills = 2pts, activities = 1pt per match
+    private const INTEREST_MAP = [
+        'Technology'              => ['Technology', 'IT', 'Information Technology', 'Computer Science', 'Computing'],
+        'Programming'             => ['Technology', 'IT', 'Programming', 'Computer Science', 'Software'],
+        'Networking'              => ['Technology', 'IT', 'Networking', 'Network'],
+        'Arts'                    => ['Arts', 'Creative', 'Fine Arts', 'Visual Arts'],
+        'Gaming'                  => ['Gaming', 'E-sports', 'Esports', 'Game'],
+        'Design'                  => ['Design', 'Creative', 'Arts', 'UI/UX', 'Graphic'],
+        'Animation'               => ['Arts', 'Design', 'Creative', 'Animation', 'Multimedia'],
+        'Cyber Security'          => ['Technology', 'Cybersecurity', 'Cyber Security', 'IT', 'Security'],
+        'Artificial Intelligence' => ['Technology', 'AI', 'Machine Learning', 'Data Science', 'Computer Science'],
+        'Analytics'               => ['Technology', 'Data Science', 'Analytics', 'IT'],
+        'Machine Learning'        => ['Technology', 'AI', 'Machine Learning', 'Data Science'],
+        'Innovation'              => ['Technology', 'Entrepreneurship', 'Innovation', 'Business'],
     ];
 
-    private const SKILL_CATEGORY_MAP = [
-        'Public Speaking'   => ['Leadership', 'Communication'],
-        'Leadership'        => ['Leadership'],
-        'Project Management'=> ['Leadership', 'Management'],
-        'Arts'              => ['Arts', 'Creative'],
-        'Programming'       => ['Technology', 'IT'],
-        'Cybersecurity'     => ['Technology', 'Cybersecurity'],
-        'UI/UX Design'      => ['Design', 'Technology'],
-        'Graphic Design'    => ['Design', 'Arts'],
+    private const SKILL_MAP = [
+        'Public Speaking'    => ['Leadership', 'Communication', 'Education', 'Management'],
+        'Leadership'         => ['Leadership', 'Management', 'Organization'],
+        'Project Management' => ['Leadership', 'Management', 'Business', 'Organization'],
+        'Arts'               => ['Arts', 'Creative', 'Fine Arts', 'Visual Arts'],
+        'Programming'        => ['Technology', 'IT', 'Computer Science', 'Programming'],
+        'Cybersecurity'      => ['Technology', 'Cybersecurity', 'Cyber Security', 'IT'],
+        'UI/UX Design'       => ['Design', 'Technology', 'Creative', 'Arts'],
+        'Graphic Design'     => ['Design', 'Arts', 'Creative', 'Multimedia'],
     ];
 
-    private const ACTIVITY_CATEGORY_MAP = [
-        'Training'    => ['Training', 'Education', 'Leadership'],
-        'Forum'       => ['Communication', 'Leadership', 'Education'],
-        'Seminar'     => ['Education', 'Leadership'],
-        'Competition' => ['Competition', 'E-sports', 'Gaming'],
-        'E-sports'    => ['E-sports', 'Gaming'],
-        'Workshop'    => ['Education', 'Training', 'Creative'],
+    private const ACTIVITY_MAP = [
+        'Training'    => ['Training', 'Education', 'Leadership', 'Management'],
+        'Forum'       => ['Communication', 'Leadership', 'Education', 'Organization'],
+        'Seminar'     => ['Education', 'Leadership', 'Academic', 'Organization'],
+        'Competition' => ['Competition', 'E-sports', 'Gaming', 'Sports', 'Academic'],
+        'E-sports'    => ['E-sports', 'Gaming', 'Esports', 'Competition'],
+        'Workshop'    => ['Education', 'Training', 'Creative', 'Technology', 'Arts'],
+    ];
+
+    // Program → likely categories for bonus matching
+    private const PROGRAM_MAP = [
+        'BSIT'  => ['Technology', 'IT', 'Information Technology', 'Computer Science', 'Programming', 'Networking', 'Cybersecurity'],
+        'BSCS'  => ['Computer Science', 'Technology', 'Programming', 'AI', 'Machine Learning', 'Software'],
+        'BSIS'  => ['Technology', 'IT', 'Information Systems', 'Business', 'Management'],
+        'BSCpE' => ['Technology', 'Computer Science', 'Engineering', 'Hardware', 'Networking'],
     ];
 
     public function index(Request $request)
     {
         $user = $request->user();
 
-        $matchCategories = collect();
-
-        foreach (($user->interests ?? []) as $interest) {
-            $cats = self::INTEREST_CATEGORY_MAP[$interest] ?? [];
-            $matchCategories = $matchCategories->merge($cats);
-        }
-        foreach (($user->skills ?? []) as $skill) {
-            $cats = self::SKILL_CATEGORY_MAP[$skill] ?? [];
-            $matchCategories = $matchCategories->merge($cats);
-        }
-        foreach (($user->activities ?? []) as $activity) {
-            $cats = self::ACTIVITY_CATEGORY_MAP[$activity] ?? [];
-            $matchCategories = $matchCategories->merge($cats);
-        }
-
-        $matchCategories = $matchCategories->unique()->values();
-
         $orgs = Organization::with(['photos'])
             ->whereNull('deleted_at')
             ->get();
 
-        // Score each org
-        $scored = $orgs->map(function ($org) use ($matchCategories) {
-            $score = 0;
-            if ($org->category && $matchCategories->contains($org->category)) {
-                $score = $matchCategories->filter(fn($c) => $c === $org->category)->count();
-            }
-            return ['org' => $org, 'score' => $score];
+        $scored = $orgs->map(function ($org) use ($user) {
+            [$score, $matchedTags] = $this->scoreOrg($org, $user);
+            return [
+                'org'         => $org,
+                'score'       => $score,
+                'matchedTags' => $matchedTags,
+            ];
         })
         ->sortByDesc('score')
-        ->filter(fn($item) => $item['score'] > 0)
-        ->take(10)
         ->values();
 
-        // Fall back to all orgs if no matches
-        if ($scored->isEmpty()) {
-            $scored = $orgs->take(10)->map(fn($o) => ['org' => $o, 'score' => 0]);
-        }
+        $matched   = $scored->filter(fn($i) => $i['score'] > 0)->take(10)->values();
+        $displayed = $matched->isNotEmpty() ? $matched : $scored->take(10)->values();
 
         return response()->json([
-            'recommendations' => $scored->map(fn($item) => [
-                'id'       => $item['org']->id,
-                'name'     => $item['org']->name,
-                'category' => $item['org']->category,
-                'president'=> $item['org']->president,
-                'mission'  => $item['org']->mission,
-                'logo'     => $item['org']->logo ? asset('storage/' . $item['org']->logo) : null,
-                'score'    => $item['score'],
-                'match_reason' => $this->matchReason($item['org'], request()->user()),
-            ])->values(),
+            'recommendations' => $displayed->map(fn($item) => $this->formatOrg($item)),
         ]);
     }
 
-    private function matchReason(Organization $org, $user): string
+    private function scoreOrg(Organization $org, $user): array
     {
-        $interests = $user->interests ?? [];
-        $skills    = $user->skills ?? [];
+        $score       = 0;
+        $matchedTags = [];
+        $category    = strtolower($org->category ?? '');
 
-        $matched = array_merge(
-            array_filter($interests, fn($i) => in_array($org->category, self::INTEREST_CATEGORY_MAP[$i] ?? [])),
-            array_filter($skills, fn($s) => in_array($org->category, self::SKILL_CATEGORY_MAP[$s] ?? []))
-        );
+        if (!$category) return [0, []];
 
-        if (empty($matched)) return "Matches your profile";
+        // Interests → 3 pts each
+        foreach (($user->interests ?? []) as $interest) {
+            $cats = array_map('strtolower', self::INTEREST_MAP[$interest] ?? []);
+            if (in_array($category, $cats) || $this->partialMatch($category, $cats)) {
+                $score += 3;
+                $matchedTags[] = $interest;
+            }
+        }
 
-        return 'Matches your interest in ' . implode(' and ', array_unique($matched));
+        // Skills → 2 pts each
+        foreach (($user->skills ?? []) as $skill) {
+            $cats = array_map('strtolower', self::SKILL_MAP[$skill] ?? []);
+            if (in_array($category, $cats) || $this->partialMatch($category, $cats)) {
+                $score += 2;
+                $matchedTags[] = $skill;
+            }
+        }
+
+        // Activities → 1 pt each
+        foreach (($user->activities ?? []) as $activity) {
+            $cats = array_map('strtolower', self::ACTIVITY_MAP[$activity] ?? []);
+            if (in_array($category, $cats) || $this->partialMatch($category, $cats)) {
+                $score += 1;
+                $matchedTags[] = $activity;
+            }
+        }
+
+        // Program bonus → +1 pt if category aligns with program
+        $programCats = array_map('strtolower', self::PROGRAM_MAP[$user->program ?? ''] ?? []);
+        if (!empty($programCats) && (in_array($category, $programCats) || $this->partialMatch($category, $programCats))) {
+            $score += 1;
+        }
+
+        return [$score, array_unique($matchedTags)];
+    }
+
+    private function partialMatch(string $category, array $cats): bool
+    {
+        foreach ($cats as $c) {
+            if (str_contains($category, $c) || str_contains($c, $category)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private function formatOrg(array $item): array
+    {
+        $org  = $item['org'];
+        $tags = array_values($item['matchedTags']);
+        $score = $item['score'];
+
+        // Build match reason from tags
+        if (!empty($tags)) {
+            $reason = 'Matches your ' . implode(', ', array_slice($tags, 0, 3));
+        } else {
+            $reason = 'Explore this organization';
+        }
+
+        // Match percentage capped at 100 (max possible = 3*3 + 3*2 + 3*1 + 1 = 16)
+        $matchPct = min(100, (int) round(($score / 16) * 100));
+
+        return [
+            'id'           => $org->id,
+            'name'         => $org->name,
+            'category'     => $org->category,
+            'president'    => $org->president,
+            'mission'      => $org->mission,
+            'logo'         => $org->logo ? asset('storage/' . $org->logo) : null,
+            'score'        => $score,
+            'match_pct'    => $matchPct,
+            'match_reason' => $reason,
+            'match_tags'   => $tags,
+        ];
     }
 }

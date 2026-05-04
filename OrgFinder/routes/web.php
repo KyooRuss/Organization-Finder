@@ -98,6 +98,9 @@ Route::prefix('admin-officer')->name('admin-officer.')->group(function () {
 
         // Organization profile
         Route::get('/organization', [AdminOfficerOrgController::class, 'index'])->name('organization.index');
+        Route::get('/organization/edit', [AdminOfficerOrgController::class, 'edit'])->name('organization.edit');
+        Route::put('/organization', [AdminOfficerOrgController::class, 'update'])->name('organization.update');
+        Route::delete('/organization/photos/{photo}', [AdminOfficerOrgController::class, 'deletePhoto'])->name('organization.photo.delete');
 
         // Events
         Route::prefix('events')->name('events.')->group(function () {

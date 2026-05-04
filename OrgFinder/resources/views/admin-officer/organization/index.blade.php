@@ -6,6 +6,16 @@
 
 @section('content')
 @if($organization)
+
+{{-- Edit Profile button --}}
+<div style="display:flex;justify-content:flex-end;margin-bottom:16px;">
+    <a href="{{ route('admin-officer.organization.edit') }}"
+       style="display:inline-flex;align-items:center;gap:6px;background:#4361EE;color:#fff;padding:8px 18px;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="#fff"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zm17.71-10.21a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+        Edit Profile
+    </a>
+</div>
+
 <div style="display:grid;grid-template-columns:1fr 320px;gap:20px;align-items:start;">
 
     {{-- Left column --}}
@@ -57,7 +67,7 @@
             </div>
         </div>
 
-        {{-- Reasons to Join (using mission bullets if available) --}}
+        {{-- Reasons to Join --}}
         @if($organization->mission)
         <div class="card" style="margin-bottom:20px;">
             <div style="font-size:15px;font-weight:700;color:#1e2f6e;margin-bottom:12px;">Reasons to Join</div>
@@ -70,6 +80,52 @@
             </ul>
         </div>
         @endif
+
+        {{-- Member/Alumni Testimonials --}}
+        @if($testimonials->count())
+        <div class="card" style="margin-bottom:20px;">
+            <div style="font-size:15px;font-weight:700;color:#1e2f6e;margin-bottom:14px;">Member/Alumni Testimonials</div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;">
+                @foreach($testimonials as $t)
+                <div style="background:#f8f9ff;border-radius:10px;padding:14px 16px;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="#4361EE" style="margin-bottom:8px;opacity:.5;"><path d="M6 17h3l2-4V7H5v6h3zm8 0h3l2-4V7h-6v6h3z"/></svg>
+                    <p style="font-size:12px;color:#475569;line-height:1.6;margin:0;">{{ $t->testimonial }}</p>
+                </div>
+                @endforeach
+            </div>
+        </div>
+        @endif
+
+        {{-- Event Highlights Carousel --}}
+        <div class="card" style="margin-bottom:20px;">
+            <div style="font-size:15px;font-weight:700;color:#1e2f6e;margin-bottom:14px;">Event Highlights</div>
+            @if($eventPosters->count())
+            <div style="position:relative;padding:0 14px;">
+                <div id="eventTrack" style="display:flex;gap:14px;overflow:hidden;scroll-behavior:smooth;">
+                    @foreach($eventPosters as $event)
+                    <div style="flex:0 0 244px;height:316px;border-radius:12px;overflow:hidden;position:relative;background:#f1f5f9;cursor:pointer;"
+                         onclick="openLightbox('{{ asset('storage/'.$event->poster) }}','{{ addslashes($event->title) }}')">
+                        <img src="{{ asset('storage/'.$event->poster) }}" style="width:100%;height:100%;object-fit:cover;">
+                        <div style="position:absolute;bottom:0;left:0;right:0;padding:10px 12px;background:linear-gradient(transparent,rgba(0,0,0,.55));">
+                            <div style="color:#fff;font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ $event->title }}</div>
+                            <div style="color:rgba(255,255,255,.75);font-size:11px;">{{ \Carbon\Carbon::parse($event->date)->format('M j, Y') }}</div>
+                        </div>
+                    </div>
+                    @endforeach
+                </div>
+                <button onclick="scrollTrack('eventTrack',-1)" style="position:absolute;left:0;top:50%;transform:translateY(-50%);width:32px;height:32px;border-radius:50%;border:none;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.15);cursor:pointer;display:flex;align-items:center;justify-content:center;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="#4361EE"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
+                </button>
+                <button onclick="scrollTrack('eventTrack',1)" style="position:absolute;right:0;top:50%;transform:translateY(-50%);width:32px;height:32px;border-radius:50%;border:none;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.15);cursor:pointer;display:flex;align-items:center;justify-content:center;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="#4361EE"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
+                </button>
+            </div>
+            @else
+            <div style="text-align:center;padding:40px 20px;color:#94a3b8;font-size:13px;">
+                No approved event posters yet.
+            </div>
+            @endif
+        </div>
     </div>
 
     {{-- Right column --}}
@@ -82,17 +138,118 @@
         @endif
 
         @if($organization->mission)
-        <div class="card">
+        <div class="card" style="margin-bottom:16px;">
             <div style="font-size:13px;font-weight:800;color:#4361EE;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;">Mission</div>
             <p style="font-size:13px;color:#64748b;line-height:1.6;font-style:italic;">{{ $organization->mission }}</p>
+        </div>
+        @endif
+
+        {{-- Photos Coverflow Carousel --}}
+        @if($photos->count())
+        <div class="card" style="overflow:hidden;">
+            <div style="font-size:13px;font-weight:800;color:#1e2f6e;text-transform:uppercase;letter-spacing:.5px;margin-bottom:14px;">Photos</div>
+            <div style="position:relative;height:220px;">
+                @foreach($photos as $i => $photo)
+                <div class="cf-slide" data-index="{{ $i }}"
+                     style="position:absolute;top:50%;left:50%;width:180px;height:180px;border-radius:14px;overflow:hidden;cursor:pointer;transition:transform .4s ease,opacity .4s ease,box-shadow .4s ease;"
+                     onclick="cfClick({{ $i }})">
+                    <img src="{{ asset('storage/'.$photo->photo_path) }}" style="width:100%;height:100%;object-fit:cover;">
+                </div>
+                @endforeach
+            </div>
+            {{-- Dots --}}
+            <div style="display:flex;justify-content:center;gap:6px;margin-top:10px;" id="cfDots">
+                @foreach($photos as $i => $photo)
+                <div onclick="cfGoTo({{ $i }})"
+                     style="width:8px;height:8px;border-radius:50%;background:{{ $i===0?'#4361EE':'#cbd5e1' }};cursor:pointer;transition:background .2s;"></div>
+                @endforeach
+            </div>
         </div>
         @endif
     </div>
 
 </div>
+
+{{-- Lightbox --}}
+<div id="lightbox" onclick="closeLightbox()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9999;align-items:center;justify-content:center;flex-direction:column;gap:12px;">
+    <img id="lightboxImg" src="" style="max-width:90vw;max-height:80vh;border-radius:12px;object-fit:contain;">
+    <div id="lightboxCaption" style="color:#fff;font-size:14px;font-weight:500;"></div>
+</div>
+
 @else
 <div class="card" style="text-align:center;padding:60px;">
     <p style="color:#94a3b8;font-size:14px;">No organization assigned to your account.</p>
 </div>
 @endif
+
+@push('scripts')
+<script>
+// ── Event track scroll ──────────────────────────────────────────────
+function scrollTrack(id, dir) {
+    const track = document.getElementById(id);
+    if (track) track.scrollLeft += dir * (244 + 14) * 2;
+}
+
+// ── Coverflow carousel ──────────────────────────────────────────────
+let cfCurrent = 0;
+const cfSlides = Array.from(document.querySelectorAll('.cf-slide'));
+const cfTotal  = cfSlides.length;
+
+function cfRender() {
+    cfSlides.forEach((el, i) => {
+        const offset = i - cfCurrent;
+        const absOff = Math.abs(offset);
+        const scale  = absOff === 0 ? 1 : absOff === 1 ? 0.72 : 0.55;
+        const tx     = offset * 120;           // horizontal spread
+        const ty     = absOff === 0 ? -50 : absOff === 1 ? -42 : -35;
+        const opacity= absOff === 0 ? 1 : absOff === 1 ? 0.6 : 0.35;
+        const z      = absOff === 0 ? 10 : absOff === 1 ? 5 : 1;
+        const shadow = absOff === 0 ? '0 16px 40px rgba(0,0,0,.25)' : 'none';
+        el.style.transform  = `translate(calc(-50% + ${tx}px), ${ty}%) scale(${scale})`;
+        el.style.opacity    = opacity;
+        el.style.zIndex     = z;
+        el.style.boxShadow  = shadow;
+    });
+    // dots
+    document.querySelectorAll('#cfDots div').forEach((d, i) => {
+        d.style.background = i === cfCurrent ? '#4361EE' : '#cbd5e1';
+        d.style.width  = i === cfCurrent ? '20px' : '8px';
+        d.style.borderRadius = '4px';
+    });
+}
+
+function cfGoTo(idx) {
+    cfCurrent = Math.max(0, Math.min(cfTotal - 1, idx));
+    cfRender();
+}
+
+function cfClick(idx) {
+    if (idx === cfCurrent) {
+        openLightbox(cfSlides[idx].querySelector('img').src, '');
+    } else {
+        cfGoTo(idx);
+    }
+}
+
+// keyboard arrows
+document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowLeft')  cfGoTo(cfCurrent - 1);
+    if (e.key === 'ArrowRight') cfGoTo(cfCurrent + 1);
+    if (e.key === 'Escape')     closeLightbox();
+});
+
+if (cfTotal > 0) cfRender();
+
+// ── Lightbox ────────────────────────────────────────────────────────
+function openLightbox(src, caption) {
+    const lb = document.getElementById('lightbox');
+    document.getElementById('lightboxImg').src = src;
+    document.getElementById('lightboxCaption').textContent = caption;
+    lb.style.display = 'flex';
+}
+function closeLightbox() {
+    document.getElementById('lightbox').style.display = 'none';
+}
+</script>
+@endpush
 @endsection

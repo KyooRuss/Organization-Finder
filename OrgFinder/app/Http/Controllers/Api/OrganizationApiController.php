@@ -63,7 +63,7 @@ class OrganizationApiController extends Controller
             'contact_telegram' => $org->contact_telegram,
             'contact_facebook' => $org->contact_facebook,
             'logo'             => $org->logo ? asset('storage/' . $org->logo) : null,
-            'photos'           => $org->photos->map(fn($p) => asset('storage/' . $p->path))->values(),
+            'photos'           => $org->photos->map(fn($p) => asset('storage/' . $p->photo_path))->values(),
             'reasons'          => $org->reasons->pluck('reason')->values(),
             'testimonials'     => $org->testimonials->pluck('testimonial')->values(),
             'upcoming_events'  => $org->events->map(fn($e) => [
