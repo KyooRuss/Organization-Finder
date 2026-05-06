@@ -159,7 +159,10 @@
 
                     <div style="flex:1;">
                         <input type="text" name="name" class="form-control" placeholder="Enter the organization name" value="{{ old('name') }}" required style="margin-bottom:10px;">
-                        <textarea name="vision" class="form-control" placeholder="Enter the organization's vision" rows="2">{{ old('vision') }}</textarea>
+                        @include('super-admin.partials.category-select', ['selectedCategories' => old('categories', [])])
+                        <div style="margin-top:10px;">
+                            <textarea name="vision" class="form-control" placeholder="Enter the organization's vision" rows="2">{{ old('vision') }}</textarea>
+                        </div>
                     </div>
                 </div>
                 <div style="margin-top:12px;">

@@ -59,6 +59,8 @@ class OrganizationController extends Controller
         }
 
         $validated = $request->validate([
+            'categories'       => ['nullable', 'array', 'max:5'],
+            'categories.*'     => ['string', 'max:255'],
             'vision'           => ['nullable', 'string'],
             'mission'          => ['nullable', 'string'],
             'room_number'      => ['nullable', 'string', 'max:100'],
@@ -79,6 +81,7 @@ class OrganizationController extends Controller
         }
 
         $organization->update([
+            'category'         => array_filter($validated['categories'] ?? []) ?: null,
             'vision'           => $validated['vision'] ?? null,
             'mission'          => $validated['mission'] ?? null,
             'room_number'      => $validated['room_number'] ?? null,

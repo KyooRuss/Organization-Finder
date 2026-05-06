@@ -108,8 +108,11 @@
                                placeholder="Enter the organization name"
                                value="{{ old('name', $organization->name) }}"
                                required style="margin-bottom:10px;">
-                        <textarea name="vision" class="form-control"
-                                  placeholder="Enter the organization's vision" rows="2">{{ old('vision', $organization->vision) }}</textarea>
+                        @include('super-admin.partials.category-select', ['selectedCategories' => old('categories', $organization->category ?? [])])
+                        <div style="margin-top:10px;">
+                            <textarea name="vision" class="form-control"
+                                      placeholder="Enter the organization's vision" rows="2">{{ old('vision', $organization->vision) }}</textarea>
+                        </div>
                     </div>
                 </div>
                 <div style="margin-top:12px;">

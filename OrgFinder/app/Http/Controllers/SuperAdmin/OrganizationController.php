@@ -33,6 +33,8 @@ class OrganizationController extends Controller
     {
         $validated = $request->validate([
             'name'              => ['required', 'string', 'max:255'],
+            'categories'        => ['nullable', 'array', 'max:5'],
+            'categories.*'      => ['string', 'max:255'],
             'vision'            => ['nullable', 'string'],
             'mission'           => ['nullable', 'string'],
             'room_number'       => ['nullable', 'string', 'max:100'],
@@ -56,6 +58,7 @@ class OrganizationController extends Controller
 
         $organization = Organization::create([
             'name'              => $validated['name'],
+            'category'          => array_filter($validated['categories'] ?? []) ?: null,
             'vision'            => $validated['vision'] ?? null,
             'mission'           => $validated['mission'] ?? null,
             'room_number'       => $validated['room_number'] ?? null,
@@ -104,6 +107,8 @@ class OrganizationController extends Controller
     {
         $validated = $request->validate([
             'name'              => ['required', 'string', 'max:255'],
+            'categories'        => ['nullable', 'array', 'max:5'],
+            'categories.*'      => ['string', 'max:255'],
             'vision'            => ['nullable', 'string'],
             'mission'          => ['nullable', 'string'],
             'room_number'       => ['nullable', 'string', 'max:100'],
@@ -128,6 +133,7 @@ class OrganizationController extends Controller
 
         $organization->update([
             'name'              => $validated['name'],
+            'category'          => array_filter($validated['categories'] ?? []) ?: null,
             'vision'            => $validated['vision'] ?? null,
             'mission'           => $validated['mission'] ?? null,
             'room_number'       => $validated['room_number'] ?? null,

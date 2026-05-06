@@ -10,46 +10,50 @@ class RecommendationApiController extends Controller
 {
     // Weighted: interests = 3pts, skills = 2pts, activities = 1pt per match
     private const INTEREST_MAP = [
-        'Technology'              => ['Technology', 'IT', 'Information Technology', 'Computer Science', 'Computing'],
-        'Programming'             => ['Technology', 'IT', 'Programming', 'Computer Science', 'Software'],
-        'Networking'              => ['Technology', 'IT', 'Networking', 'Network'],
-        'Arts'                    => ['Arts', 'Creative', 'Fine Arts', 'Visual Arts'],
-        'Gaming'                  => ['Gaming', 'E-sports', 'Esports', 'Game'],
-        'Design'                  => ['Design', 'Creative', 'Arts', 'UI/UX', 'Graphic'],
-        'Animation'               => ['Arts', 'Design', 'Creative', 'Animation', 'Multimedia'],
-        'Cyber Security'          => ['Technology', 'Cybersecurity', 'Cyber Security', 'IT', 'Security'],
-        'Artificial Intelligence' => ['Technology', 'AI', 'Machine Learning', 'Data Science', 'Computer Science'],
-        'Analytics'               => ['Technology', 'Data Science', 'Analytics', 'IT'],
-        'Machine Learning'        => ['Technology', 'AI', 'Machine Learning', 'Data Science'],
-        'Innovation'              => ['Technology', 'Entrepreneurship', 'Innovation', 'Business'],
+        'Technology'              => ['Technology', 'Information Technology', 'Programming', 'Software Development', 'Systems & Networking', 'Information Systems', 'Business & Technology Integration', 'Research', 'Innovation', 'Academic Organization'],
+        'Programming'             => ['Programming', 'Software Development', 'Technology', 'Information Technology', 'Systems & Networking', 'Academic Organization'],
+        'Networking'              => ['Systems & Networking', 'Information Technology', 'Technology', 'Information Systems'],
+        'Arts'                    => ['Arts & Design', 'Creative', 'Creative Services', 'Multimedia', 'Performing Arts', 'Photography', 'Photo & Video Editing', 'Media Production', 'Entertainment'],
+        'Gaming'                  => ['Gaming', 'E-Sports', 'Competition', 'Team Strategy', 'Entertainment'],
+        'Design'                  => ['Arts & Design', 'Creative', 'Creative Services', 'Multimedia', 'Photography', 'Photo & Video Editing'],
+        'Animation'               => ['Multimedia', 'Creative Services', 'Arts & Design', 'Creative', 'Media Production', 'Recording & Production', 'Audio & Audiovisual Media'],
+        'Music'                   => ['Music Publishing', 'Singing / Vocal Performance', 'Music Collaboration', 'Recording & Production', 'Performing Arts', 'Audio & Audiovisual Media', 'Entertainment', 'Creative Services', 'Media Production'],
+        'Cyber Security'          => ['Information Technology', 'Systems & Networking', 'Technology', 'Information Systems'],
+        'Artificial Intelligence' => ['Technology', 'Research', 'Information Technology', 'Academic Organization', 'Innovation'],
+        'Analytics'               => ['Research', 'Academic Organization', 'Technology', 'Information Technology'],
+        'Machine Learning'        => ['Technology', 'Research', 'Academic Organization', 'Innovation'],
+        'Innovation'              => ['Innovation', 'Research', 'Technology', 'Business & Technology Integration', 'Academic Organization'],
+        'Leadership'              => ['Leadership', 'Communication', 'Service', 'Community', 'Discipline', 'Academic Organization', 'Educational'],
+        'Sports'                  => ['Competition', 'Team Strategy', 'E-Sports', 'Gaming', 'Service', 'Discipline'],
     ];
 
     private const SKILL_MAP = [
-        'Public Speaking'    => ['Leadership', 'Communication', 'Education', 'Management'],
-        'Leadership'         => ['Leadership', 'Management', 'Organization'],
-        'Project Management' => ['Leadership', 'Management', 'Business', 'Organization'],
-        'Arts'               => ['Arts', 'Creative', 'Fine Arts', 'Visual Arts'],
-        'Programming'        => ['Technology', 'IT', 'Computer Science', 'Programming'],
-        'Cybersecurity'      => ['Technology', 'Cybersecurity', 'Cyber Security', 'IT'],
-        'UI/UX Design'       => ['Design', 'Technology', 'Creative', 'Arts'],
-        'Graphic Design'     => ['Design', 'Arts', 'Creative', 'Multimedia'],
+        'Public Speaking'    => ['Leadership', 'Communication', 'Educational', 'Academic Organization', 'Service', 'Community', 'Guidance & Counseling'],
+        'Leadership'         => ['Leadership', 'Service', 'Community', 'Discipline', 'Academic Organization', 'Educational'],
+        'Project Management' => ['Leadership', 'Service', 'Business & Technology Integration', 'Academic Organization', 'Community'],
+        'Arts'               => ['Arts & Design', 'Creative', 'Creative Services', 'Multimedia', 'Performing Arts', 'Photography', 'Photo & Video Editing'],
+        'Programming'        => ['Programming', 'Software Development', 'Technology', 'Information Technology', 'Systems & Networking'],
+        'Cybersecurity'      => ['Information Technology', 'Systems & Networking', 'Technology'],
+        'UI/UX Design'       => ['Creative', 'Arts & Design', 'Creative Services', 'Multimedia', 'Technology'],
+        'Graphic Design'     => ['Arts & Design', 'Creative', 'Multimedia', 'Creative Services', 'Photography', 'Photo & Video Editing'],
     ];
 
     private const ACTIVITY_MAP = [
-        'Training'    => ['Training', 'Education', 'Leadership', 'Management'],
-        'Forum'       => ['Communication', 'Leadership', 'Education', 'Organization'],
-        'Seminar'     => ['Education', 'Leadership', 'Academic', 'Organization'],
-        'Competition' => ['Competition', 'E-sports', 'Gaming', 'Sports', 'Academic'],
-        'E-sports'    => ['E-sports', 'Gaming', 'Esports', 'Competition'],
-        'Workshop'    => ['Education', 'Training', 'Creative', 'Technology', 'Arts'],
+        'Training'    => ['Educational', 'Leadership', 'Service', 'Community', 'Academic Organization', 'Discipline', 'Guidance & Counseling'],
+        'Forum'       => ['Communication', 'Leadership', 'Educational', 'Community', 'Academic Organization', 'Mental Health'],
+        'Seminar'     => ['Educational', 'Academic Organization', 'Leadership', 'Community', 'Mental Health', 'Guidance & Counseling'],
+        'Competition' => ['Competition', 'E-Sports', 'Gaming', 'Team Strategy', 'Academic Organization'],
+        'E-sports'    => ['E-Sports', 'Gaming', 'Competition', 'Team Strategy', 'Entertainment'],
+        'Workshop'    => ['Educational', 'Creative', 'Arts & Design', 'Technology', 'Creative Services', 'Multimedia', 'Recording & Production', 'Photography', 'Media Production'],
+        'Hackathons'  => ['Programming', 'Software Development', 'Technology', 'Information Technology', 'Competition', 'Team Strategy', 'Innovation', 'Academic Organization'],
     ];
 
     // Program → likely categories for bonus matching
     private const PROGRAM_MAP = [
-        'BSIT'  => ['Technology', 'IT', 'Information Technology', 'Computer Science', 'Programming', 'Networking', 'Cybersecurity'],
-        'BSCS'  => ['Computer Science', 'Technology', 'Programming', 'AI', 'Machine Learning', 'Software'],
-        'BSIS'  => ['Technology', 'IT', 'Information Systems', 'Business', 'Management'],
-        'BSCpE' => ['Technology', 'Computer Science', 'Engineering', 'Hardware', 'Networking'],
+        'BSIT'  => ['Information Technology', 'Technology', 'Programming', 'Systems & Networking', 'Information Systems', 'Academic Organization'],
+        'BSCS'  => ['Programming', 'Software Development', 'Technology', 'Information Technology', 'Research', 'Academic Organization'],
+        'BSIS'  => ['Information Systems', 'Information Technology', 'Business & Technology Integration', 'Technology'],
+        'BSCpE' => ['Technology', 'Systems & Networking', 'Information Technology', 'Research', 'Academic Organization'],
     ];
 
     public function index(Request $request)
@@ -85,43 +89,60 @@ class RecommendationApiController extends Controller
 
     private function scoreOrg(Organization $org, $user): array
     {
-        $score       = 0;
+        $score      = 0;
         $matchedTags = [];
-        $category    = strtolower($org->category ?? '');
 
-        if (!$category) return [0, []];
+        // category is now a JSON array; support legacy single-string too
+        $orgCategories = array_map('strtolower', (array) ($org->category ?? []));
+        $orgCategories = array_filter($orgCategories);
 
-        // Interests → 3 pts each
+        if (empty($orgCategories)) return [0, []];
+
+        // Interests → 3 pts each (match if ANY org category qualifies)
         foreach (($user->interests ?? []) as $interest) {
             $cats = array_map('strtolower', self::INTEREST_MAP[$interest] ?? []);
-            if (in_array($category, $cats) || $this->partialMatch($category, $cats)) {
-                $score += 3;
-                $matchedTags[] = $interest;
+            foreach ($orgCategories as $orgCat) {
+                if (in_array($orgCat, $cats) || $this->partialMatch($orgCat, $cats)) {
+                    $score += 3;
+                    $matchedTags[] = $interest;
+                    break;
+                }
             }
         }
 
         // Skills → 2 pts each
         foreach (($user->skills ?? []) as $skill) {
             $cats = array_map('strtolower', self::SKILL_MAP[$skill] ?? []);
-            if (in_array($category, $cats) || $this->partialMatch($category, $cats)) {
-                $score += 2;
-                $matchedTags[] = $skill;
+            foreach ($orgCategories as $orgCat) {
+                if (in_array($orgCat, $cats) || $this->partialMatch($orgCat, $cats)) {
+                    $score += 2;
+                    $matchedTags[] = $skill;
+                    break;
+                }
             }
         }
 
         // Activities → 1 pt each
         foreach (($user->activities ?? []) as $activity) {
             $cats = array_map('strtolower', self::ACTIVITY_MAP[$activity] ?? []);
-            if (in_array($category, $cats) || $this->partialMatch($category, $cats)) {
-                $score += 1;
-                $matchedTags[] = $activity;
+            foreach ($orgCategories as $orgCat) {
+                if (in_array($orgCat, $cats) || $this->partialMatch($orgCat, $cats)) {
+                    $score += 1;
+                    $matchedTags[] = $activity;
+                    break;
+                }
             }
         }
 
-        // Program bonus → +1 pt if category aligns with program
+        // Program bonus → +1 pt if ANY org category aligns with program
         $programCats = array_map('strtolower', self::PROGRAM_MAP[$user->program ?? ''] ?? []);
-        if (!empty($programCats) && (in_array($category, $programCats) || $this->partialMatch($category, $programCats))) {
-            $score += 1;
+        if (!empty($programCats)) {
+            foreach ($orgCategories as $orgCat) {
+                if (in_array($orgCat, $programCats) || $this->partialMatch($orgCat, $programCats)) {
+                    $score += 1;
+                    break;
+                }
+            }
         }
 
         return [$score, array_unique($matchedTags)];

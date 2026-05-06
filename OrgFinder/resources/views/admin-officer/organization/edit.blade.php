@@ -63,6 +63,12 @@
                 </div>
             </div>
 
+            {{-- Category --}}
+            <div class="card" style="margin-bottom:20px;">
+                <div class="section-title">Category</div>
+                @include('super-admin.partials.category-select', ['selectedCategories' => old('categories', $organization->category ?? [])])
+            </div>
+
             {{-- Basic info --}}
             <div class="card" style="margin-bottom:20px;">
                 <div class="section-title">Basic Information</div>

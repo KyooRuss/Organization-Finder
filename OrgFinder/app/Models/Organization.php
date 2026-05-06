@@ -18,6 +18,7 @@ class Organization extends Model
 
     protected $casts = [
         'eligible_programs' => 'array',
+        'category'          => 'array',
     ];
 
     public function photos()
